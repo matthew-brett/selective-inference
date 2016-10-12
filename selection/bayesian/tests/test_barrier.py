@@ -141,7 +141,8 @@ def test_selection_probability():
                                                noise_variance,
                                                randomization.laplace((p,), 2.))
 
-    sel_prob.minimize()
+    print(sel_prob.minimize())
+    print(sel_prob.minimize2())
 
 def test_selection_probability_gaussian():
 
@@ -174,7 +175,8 @@ def test_selection_probability_gaussian():
                                                noise_variance,
                                                randomization.isotropic_gaussian((p,), 2.))
 
-    sel_prob.minimize()
+    print(sel_prob.minimize())
+    print(sel_prob.minimize2())
 
 
 class understand(rr.smooth_atom):
