@@ -143,7 +143,7 @@ if sel is not None:
             #plt.plot(snr_seq, sel_non_scaled_seq, color="b")
             #plt.plot(snr_seq, sel_scaled_seq, color="r")
             #plt.plot(snr_seq, sel_grad_descent, color="m")
-            #plt.savefig('/Users/snigdhapanigrahi/Python_Plots/my_sel_prob.png')
+            #plt.savefig('my_sel_prob.png')
             #plt.close()
 
     test_one_sparse()
