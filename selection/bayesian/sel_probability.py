@@ -155,7 +155,9 @@ class selection_probability(object):
         #else:
         initial_data = np.zeros(self.n)
         res = minimize(objective_data, x0=initial_data)
-        return -res.fun, res.x
+        optimal_z1 = res.x
+        optimal_z2 = minimize(objective_coef, x0=self.betaE, args=optimal_z1)
+        return -res.fun, np.hstack([optimal_z1, optimal_z2]), lambda x: objective_coef(x[-1], x[:-1])
 
     def selective_map(self,y,prior_sd):
         def objective(param,y,prior_sd):

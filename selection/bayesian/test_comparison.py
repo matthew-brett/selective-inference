@@ -122,13 +122,12 @@ if sel is not None:
                 #    np.dot(mean.T, mean), 2 * noise_variance) - np.true_divide(
                 #    np.dot(gamma_sel[:nactive].T, gamma_sel[:nactive]),2 * (tau ** 2))
 
-                sel_scaled_prob = sel_scaled.optimization(parameter*np.ones(nactive),method="softmax_barrier")
-                sel_scaled_prob_min = sel_scaled_prob[0]\
-                                 -np.true_divide(np.dot(mean.T,mean),2*noise_variance)\
-                                 -np.true_divide(np.dot(gamma_sel[:nactive].T,gamma_sel[:nactive]),2*(tau**2))
-                                      #sel_scaled_prob[1]
+                sel_scaled_val, other_minimizer, objective = sel_scaled.optimization(parameter*np.ones(nactive),method="softmax_barrier")
+                constant = (-np.true_divide(np.dot(mean.T,mean),2*noise_variance)
+                             -np.true_divide(np.dot(gamma_sel[:nactive].T,gamma_sel[:nactive]),2*(tau**2)))
 
-                print "log selection probability", sel_scaled_prob_min, -sel_prob_grad_descent.minimize()[1]
+                minimizer, value = sel_prob_grad_descent.minimize2()
+                print "log selection probability", sel_scaled_val + constant, -value, sel_prob_grad_descent.smooth_objective(minimizer, 'func'), objective(minimizer), objective(other_minimizer)
 
                 #sel_non_scaled_seq.append(sel_non_scaled_val)
                 sel_scaled_seq.append(sel_scaled_prob_min)
@@ -205,7 +204,11 @@ if sel is not None:
                 print "log selection probability", sel_log_val, sel_softmax_val
 
 
+<<<<<<< HEAD
     #test_different_barriers()
+=======
+    # test_different_barriers()
+>>>>>>> changes for bayesian test
 
 
 

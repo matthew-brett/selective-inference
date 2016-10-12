@@ -116,7 +116,7 @@ class my_selection_probability_only_objective(object):
             value_coef = objective_coef(self.active_coef,z_1)
             return -np.dot(z_1.T, mu_data_mod) + np.true_divide(np.dot(np.dot(z_1.T, self.Sigma), z_1), 2) + value_coef
 
-        return objective_data(self.vec), value_subgrad_coordinate(self.vec, self.active_coef)
+        return objective_data(self.vec), value_subgrad_coordinate(self.vec, self.active_coef), objective_data
 
 
 class selection_probability_only_objective(rr.smooth_atom):
