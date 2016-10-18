@@ -142,7 +142,7 @@ def test_one_sparse_minimizations():
             _scipy = [sel_prob_scipy_val[0], sel_prob_scipy_val[1]]
 
             toc = time.time()
-            _regreg = sel_prob_grad_descent.minimize(min_its=500, max_its=1000, tol=1.e-12)[::-1]
+            _regreg = sel_prob_grad_descent.minimize(min_its=20, max_its=200, tol=1.e-12)[::-1]
             tic = time.time()
             print('regreg time', tic-toc)
 

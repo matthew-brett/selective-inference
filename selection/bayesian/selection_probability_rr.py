@@ -149,7 +149,7 @@ class cube_objective(rr.smooth_atom):
     def __init__(self,
                  randomization_CGF_conjugate,
                  lagrange, 
-                 nstep=10,
+                 nstep=30,
                  tol=1.e-10,
                  initial=None,
                  coef=1.,
@@ -184,9 +184,9 @@ class cube_objective(rr.smooth_atom):
         if mode == 'func':
             return self.scale(value)
         elif mode == 'grad':
-            return -self.scale(optimizer)
+            return self.scale(arg + optimizer)
         elif mode == 'both':
-            return self.scale(value), -self.scale(optimizer)
+            return self.scale(value), self.scale(arg + optimizer)
         else:
             raise ValueError("mode incorrectly specified")
 
