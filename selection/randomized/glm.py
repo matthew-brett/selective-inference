@@ -217,6 +217,7 @@ def target(loss,
            queries,
            subset=None, 
            bootstrap=False,
+           covariance_estimator='bootstrap',
            solve_args={'min_its':50, 'tol':1.e-10},
            reference=None):
     """
@@ -277,19 +278,27 @@ def target(loss,
     nactive_subset = active_subset.sum()
     inactive = ~active * subset
 
-    boot_target, boot_target_observed = pairs_bootstrap_glm(loss, active, inactive=inactive)
+    # replace this with choice between bootstrap and parametric
+    if covariance_estimator == 'bootstrap':
+        boot_target, boot_target_observed = pairs_bootstrap_glm(loss, active, inactive=inactive)
 
-    def _subsetter(value):
-        if nactive_subset > 0:        
-            return np.hstack([value[active_subset], value[nactive:]])
-        else:
-            return value[nactive:]
+        def _subsetter(value):
+            if nactive_subset > 0:        
+                return np.hstack([value[active_subset], value[nactive:]])
+            else:
+                return value[nactive:]
 
-    def _target(indices):
-        return _subsetter(boot_target(indices))
-    target_observed = _subsetter(boot_target_observed)
+        def _target(indices):
+            return _subsetter(boot_target(indices))
+        target_observed = _subsetter(boot_target_observed)
 
-    form_covariances = glm_nonparametric_bootstrap(n, n)
+        form_covariances = glm_nonparametric_bootstrap(n, n)
+    elif covariance_estimator == 'parametric':
+        form_covariances = glm_parametric_covariance(loss)
+        # we need to find _target and target_observed for below
+    else:
+        raise ValueError('covariance estimator must be "parametric" or "bootstrap"')
+
     queries.setup_sampler(form_covariances)
     queries.setup_opt_state()
 
@@ -297,6 +306,8 @@ def target(loss,
         reference = target_observed
 
     if bootstrap:
+        if covariance_estimator == 'parametric':
+            raise ValueError('if using bootstrap, covariance estimator must be "bootstrap"')
         alpha_mat = set_alpha_matrix(loss, active, inactive=inactive)
         alpha_subset = np.ones(alpha_mat.shape[0], np.bool)
         alpha_subset[:nactive] = active_subset
