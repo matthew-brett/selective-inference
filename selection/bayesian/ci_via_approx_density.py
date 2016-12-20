@@ -322,7 +322,12 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
         else:
             return 0, 0
 
+    def approximate_pvalues(self, j, param):
 
+        area_vec = self.area_normalized_density(j, param)
+        area = area_vec[self.ind_obs[j]]
+
+        return 2*np.min(area, 1-area)
 
 
 
