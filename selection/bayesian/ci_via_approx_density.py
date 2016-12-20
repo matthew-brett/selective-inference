@@ -5,6 +5,8 @@ from selection.bayesian.selection_probability_rr import nonnegative_softmax_scal
 from scipy.stats import norm
 from selection.randomized.M_estimator import M_estimator
 from selection.randomized.glm import pairs_bootstrap_glm, bootstrap_cov
+import selection.tests.reports as reports
+
 
 def myround(a, decimals=1):
     a_x = np.round(a, decimals=1)* 10.
@@ -254,8 +256,8 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
         self.nactive = nactive
 
         #defining the grid on which marginal conditional densities will be evaluated
-        grid_length = 120
-        self.grid = np.linspace(-4, 8, num=grid_length)
+        grid_length = 201
+        self.grid = np.linspace(-5, 15, num=grid_length)
         #s_obs = np.round(self.target_observed, decimals =1)
 
         print("observed values", target_observed)
@@ -269,7 +271,7 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
             if obs < self.grid[0]:
                 self.ind_obs[j] = 0
             elif obs > np.max(self.grid):
-                self.ind_obs[j] = grid_length
+                self.ind_obs[j] = grid_length-1
             else:
                 self.ind_obs[j] = np.argmin(np.abs(self.grid-obs))
 
@@ -286,7 +288,6 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
             h_hat.append(-(approx.minimize2(j, nstep=50)[::-1])[0])
 
         return np.array(h_hat)
-
 
     def area_normalized_density(self, j, mean):
 
@@ -305,7 +306,7 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
     def approximate_ci(self, j):
 
-        param_grid = np.round(np.linspace(-5, 10, num=151), decimals=1)
+        param_grid = np.linspace(-5, 15, num=201)
 
         area = np.zeros(param_grid.shape[0])
 
@@ -320,113 +321,6 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
             return np.nanmin(region), np.nanmax(region)
         else:
             return 0, 0
-
-
-
-def test_approximate_ci_E(n=200, p=10, s=5, snr=5, rho=0.1,
-                          lam_frac=1.,
-                          loss='gaussian'):
-
-    from selection.tests.instance import logistic_instance, gaussian_instance
-    from selection.randomized.api import randomization
-
-    if loss == "gaussian":
-        X, y, beta, nonzero, sigma = gaussian_instance(n=n, p=p, s=s, rho=rho, snr=snr, sigma=1)
-        lam = lam_frac * np.mean(np.fabs(np.dot(X.T, np.random.standard_normal((n, 2000)))).max(0)) * sigma
-        loss = rr.glm.gaussian(X, y)
-    elif loss == "logistic":
-        X, y, beta, _ = logistic_instance(n=n, p=p, s=s, rho=rho, snr=snr)
-        loss = rr.glm.logistic(X, y)
-        lam = lam_frac * np.mean(np.fabs(np.dot(X.T, np.random.binomial(1, 1. / 2, (n, 10000)))).max(0))
-
-    # randomizer = randomization.isotropic_gaussian((p,), scale=sigma)
-
-    epsilon = 1. / np.sqrt(n)
-
-    W = np.ones(p) * lam
-    # W[0] = 0 # use at least some unpenalized
-    penalty = rr.group_lasso(np.arange(p),
-                             weights=dict(zip(np.arange(p), W)), lagrange=1.)
-
-    randomization = randomization.isotropic_gaussian((p,), 1.)
-    ci = approximate_conditional_density_E(loss, epsilon, penalty, randomization)
-
-    ci.solve_approx()
-    print("nactive", ci._overall.sum())
-    active_set = np.asarray([i for i in range(p) if ci._overall[i]])
-
-    true_support = np.asarray([i for i in range(p) if i < s])
-
-    nactive = ci.nactive
-
-    print("active set, true_support", active_set, true_support)
-
-    #truth = np.round((np.linalg.pinv(X_1[:, active])).dot(X_1[:, active].dot(true_beta[active])))
-    truth = beta[ci._overall]
-
-    print("true coefficients", truth)
-
-    if (set(active_set).intersection(set(true_support)) == set(true_support))== True:
-
-        ci_active_E = np.zeros((nactive, 2))
-        toc = time.time()
-        for j in range(nactive):
-            ci_active_E[j, :] = np.array(ci.approximate_ci(j))
-            print(ci_active_E[j, :])
-        tic = time.time()
-        print('ci time now', tic - toc)
-        #print('ci intervals now', ci_active_E)
-
-        return active_set, ci_active_E, truth, nactive
-
-    else:
-        return 0
-
-#test_approximate_ci_E()
-
-def compute_coverage(p=10):
-
-    niter = 50
-    coverage = np.zeros(p)
-    nsel = np.zeros(p)
-    nerr = 0
-    for iter in range(niter):
-        print("\n")
-        print("iteration", iter)
-        try:
-            test_ci = test_approximate_ci_E()
-            if test_ci != 0:
-                ci_active = test_ci[1]
-                print("ci", ci_active)
-                active_set = test_ci[0]
-                true_val = test_ci[2]
-                nactive = test_ci[3]
-                toc = time.time()
-                for l in range(nactive):
-                    nsel[active_set[l]] += 1
-                    print(true_val[l])
-                    if (ci_active[l,0]<= true_val[l]) and (true_val[l]<= ci_active[l,1]):
-                        coverage[active_set[l]] += 1
-                tic = time.time()
-                print('ci time', tic - toc)
-
-            print(coverage[~np.isnan(coverage)])
-            print(nsel[~np.isnan(nsel)])
-            print('coverage so far',np.true_divide(np.sum(coverage[~np.isnan(coverage)]), np.sum(nsel[~np.isnan(nsel)])))
-
-        except ValueError:
-            nerr +=1
-            print('ignore iteration raising ValueError')
-            continue
-
-    coverage_prop = np.true_divide(coverage, nsel)
-    coverage_prop[coverage_prop == np.inf] = 0
-    coverage_prop = np.nan_to_num(coverage_prop)
-    return coverage_prop, nsel, nerr
-
-
-print(compute_coverage())
-
 
 
 
