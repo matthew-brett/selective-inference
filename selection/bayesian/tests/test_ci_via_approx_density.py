@@ -7,9 +7,11 @@ from selection.tests.instance import logistic_instance, gaussian_instance
 from selection.bayesian.ci_via_approx_density import approximate_conditional_density_E
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
 from selection.tests.decorators import wait_for_return_value, register_report, set_sampling_params_iftrue
+from selection.randomized.query import naive_confidence_intervals
+from selection.randomized.query import naive_pvalues
 
 
-@register_report(['cover', 'ci_length', 'truth'])
+@register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
 def test_approximate_ci_E(n=200, p=10, s=3, snr=5, rho=0,
@@ -62,6 +64,10 @@ def test_approximate_ci_E(n=200, p=10, s=3, snr=5, rho=0,
         covered = np.zeros(nactive, np.bool)
         ci_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
+
+        ci_naive = naive_confidence_intervals(ci.target, ci.target_observed)
+        naive_pvals = naive_pvalues(ci.target, ci.target_observed, true_vec)
+        naive_covered = np.zeros(nactive)
         toc = time.time()
 
         for j in range(nactive):
@@ -70,21 +76,22 @@ def test_approximate_ci_E(n=200, p=10, s=3, snr=5, rho=0,
                 covered[j] = 1
             ci_length[j] = ci_active_E[j,1] - ci_active_E[j,0]
             print(ci_active_E[j, :])
+            pivots[j] = ci.approximate_pvalue(j, true_vec[j])
 
-            pivots[j] = ci.approximate_pvalues(j, true_vec[j])
+            # naive ci
+            if (ci_naive[j,0]<=true_vec[j]) and (ci_naive[j,1]>=true_vec[j]):
+                naive_covered[j]+=1
+
         tic = time.time()
         print('ci time now', tic - toc)
 
-
-        return covered, ci_length, pivots
-
+        return covered, ci_length, pivots, naive_covered, naive_pvals
     #else:
     #    return 0
 
+def report(niter=20, **kwargs):
 
-def report(niter=50, **kwargs):
-
-    kwargs = {'s': 0, 'n': 200, 'p': 20, 'snr': 7, 'loss':'gaussian', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 200, 'p': 50, 'snr': 7, 'loss':'gaussian', 'randomizer':'gaussian'}
     split_report = reports.reports['test_approximate_ci_E']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
@@ -92,8 +99,8 @@ def report(niter=50, **kwargs):
                                                      reports.summarize_all,
                                                      **kwargs)
 
-    fig = reports.pivot_plot_simple(screened_results)
-    fig.savefig('approx_pivots.pdf') # will have both bootstrap and CLT on plot
+    fig = reports.pivot_plot_plus_naive(screened_results)
+    fig.savefig('approx_pivots.pdf')
 
 
 if __name__=='__main__':

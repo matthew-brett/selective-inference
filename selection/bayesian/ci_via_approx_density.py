@@ -7,7 +7,6 @@ from selection.randomized.M_estimator import M_estimator
 from selection.randomized.glm import pairs_bootstrap_glm, bootstrap_cov
 import selection.tests.reports as reports
 
-
 def myround(a, decimals=1):
     a_x = np.round(a, decimals=1)* 10.
     rem = np.zeros(a.shape[0], bool)
@@ -204,6 +203,12 @@ class approximate_conditional_prob_E(rr.smooth_atom):
 
         return current, value
 
+
+class target_class(object):
+    def __init__(self, target_cov):
+        self.target_cov = target_cov
+        self.shape = target_cov.shape
+
 class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
     def __init__(self, loss, epsilon, penalty, randomization,
@@ -249,6 +254,7 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
         # observed target and null statistic
         target_observed = self.observed_score_state[:nactive]
+        self.target = target_class(Sigma_T)
         null_statistic = (score_linear_term.dot(self.observed_score_state))-(target_linear_term.dot(target_observed))
 
         (self.target_linear_term, self.target_observed, self.null_statistic) \
@@ -322,15 +328,12 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
         else:
             return 0, 0
 
-    def approximate_pvalues(self, j, param):
+    def approximate_pvalue(self, j, param):
 
         area_vec = self.area_normalized_density(j, param)
         area = area_vec[self.ind_obs[j]]
 
-        return 2*np.min(area, 1-area)
-
-
-
+        return 2*min(area, 1-area)
 
 
 
