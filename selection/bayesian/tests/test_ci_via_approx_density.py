@@ -14,7 +14,7 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_approximate_ci_E(n=200, p=10, s=3, snr=5, rho=0,
+def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
                           lam_frac=1.,
                           loss='logistic',
                           randomizer='gaussian'):
@@ -89,10 +89,10 @@ def test_approximate_ci_E(n=200, p=10, s=3, snr=5, rho=0,
     #else:
     #    return 0
 
-def report(niter=20, **kwargs):
+def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 200, 'p': 50, 'snr': 7, 'loss':'gaussian', 'randomizer':'gaussian'}
-    split_report = reports.reports['test_approximate_ci_E']
+    kwargs = {'s': 0, 'n': 200, 'p': 20, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    split_report = reports.reports['test_approximate_ci']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
                                                      niter,
