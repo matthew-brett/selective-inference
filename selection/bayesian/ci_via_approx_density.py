@@ -119,12 +119,13 @@ class approximate_conditional_prob_E(rr.smooth_atom):
         param = self.apply_offset(param)
         index = np.zeros(self.AD.nactive, bool)
         index[j] = 1
-        data = np.squeeze(self.t * self.AD.target_linear_term[:, index]) \
-               + self.AD.target_linear_term[:, ~index].dot(self.AD.target_observed[~index])
+        A_j = np.dot(self.AD.score_linear_term, self.AD.Sigma_DT[:,j])/self.AD.Sigma_T[j,j]
+        data = np.squeeze(self.t *  A_j)
+        null_statistic = self.AD.score_linear_term.dot(self.AD.observed_score_state)-A_j * self.AD.target_observed[j]
 
-        offset_active = self.AD.opt_affine_term[:self.AD.nactive] + self.AD.null_statistic[:self.AD.nactive] + data[:self.AD.nactive]
+        offset_active = self.AD.opt_affine_term[:self.AD.nactive] + null_statistic[:self.AD.nactive] + data[:self.AD.nactive]
 
-        offset_inactive = self.AD.null_statistic[self.AD.nactive:] + data[self.AD.nactive:]
+        offset_inactive = null_statistic[self.AD.nactive:] + data[self.AD.nactive:]
 
         active_conj_loss = rr.affine_smooth(self.active_conjugate,
                                             rr.affine_transform(self.B_active, offset_active))
@@ -241,24 +242,26 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
         nactive = self._overall.sum()
 
-        Sigma_D_T = score_cov[:, :nactive]
+        Sigma_DT = score_cov[:, :nactive]
         Sigma_T = score_cov[:nactive, :nactive]
-        Sigma_T_inv = np.linalg.inv(Sigma_T)
+        Sigma_Tinv = np.linalg.inv(Sigma_T)
 
         score_linear_term = self.score_transform[0]
         (self.opt_linear_term, self.opt_affine_term) = self.opt_transform
 
         # decomposition
         #print(self.opt_affine_term[nactive:])
-        target_linear_term = (score_linear_term.dot(Sigma_D_T)).dot(Sigma_T_inv)
+        #target_linear_term = (score_linear_term.dot(Sigma_DT)).dot(Sigma_Tinv)
+        (self.score_linear_term, self.Sigma_DT, self.Sigma_T) = (score_linear_term, Sigma_DT, Sigma_T)
 
         # observed target and null statistic
         target_observed = self.observed_score_state[:nactive]
         self.target = target_class(Sigma_T)
-        null_statistic = (score_linear_term.dot(self.observed_score_state))-(target_linear_term.dot(target_observed))
+        #null_statistic = (score_linear_term.dot(self.observed_score_state))-(target_linear_term.dot(target_observed))
 
-        (self.target_linear_term, self.target_observed, self.null_statistic) \
-            = (target_linear_term, target_observed, null_statistic)
+        #(self.target_linear_term, self.target_observed, self.null_statistic) \
+        #    = (target_linear_term, target_observed, null_statistic)
+        self.target_observed = target_observed
         self.nactive = nactive
 
         #defining the grid on which marginal conditional densities will be evaluated
