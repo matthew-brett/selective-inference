@@ -74,7 +74,7 @@ class neg_log_cube_probability(rr.smooth_atom):
             raise ValueError("mode incorrectly specified")
 
 
-class approximate_conditional_prob_E(rr.smooth_atom):
+class approximate_conditional_prob(rr.smooth_atom):
 
     def __init__(self,
                  t, #point at which density is to computed
@@ -210,7 +210,7 @@ class target_class(object):
         self.target_cov = target_cov
         self.shape = target_cov.shape
 
-class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
+class approximate_conditional_density(rr.smooth_atom, M_estimator):
 
     def __init__(self, loss, epsilon, penalty, randomization,
                  coef=1.,
@@ -244,29 +244,23 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
         Sigma_DT = score_cov[:, :nactive]
         Sigma_T = score_cov[:nactive, :nactive]
-        Sigma_Tinv = np.linalg.inv(Sigma_T)
 
         score_linear_term = self.score_transform[0]
         (self.opt_linear_term, self.opt_affine_term) = self.opt_transform
 
-        # decomposition
-        #print(self.opt_affine_term[nactive:])
-        #target_linear_term = (score_linear_term.dot(Sigma_DT)).dot(Sigma_Tinv)
         (self.score_linear_term, self.Sigma_DT, self.Sigma_T) = (score_linear_term, Sigma_DT, Sigma_T)
 
         # observed target and null statistic
         target_observed = self.observed_score_state[:nactive]
         self.target = target_class(Sigma_T)
-        #null_statistic = (score_linear_term.dot(self.observed_score_state))-(target_linear_term.dot(target_observed))
 
-        #(self.target_linear_term, self.target_observed, self.null_statistic) \
-        #    = (target_linear_term, target_observed, null_statistic)
         self.target_observed = target_observed
         self.nactive = nactive
 
         #defining the grid on which marginal conditional densities will be evaluated
         grid_length = 201
-        self.grid = np.linspace(-5, 15, num=grid_length)
+        #self.grid = np.linspace(-5, 15, num=grid_length)
+        self.grid = np.linspace(-5*np.max(np.abs(target_observed)), 5*np.max(np.abs(target_observed)), num=grid_length)
         #s_obs = np.round(self.target_observed, decimals =1)
 
         print("observed values", target_observed)
@@ -283,7 +277,6 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
                 self.ind_obs[j] = grid_length-1
             else:
                 self.ind_obs[j] = np.argmin(np.abs(self.grid-obs))
-
                 #self.ind_obs[j] = (np.where(self.grid == obs)[0])[0]
             self.h_approx[j, :] = self.approx_conditional_prob(j)
 
@@ -293,7 +286,7 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
 
         for i in range(self.grid.shape[0]):
 
-            approx = approximate_conditional_prob_E(self.grid[i], self)
+            approx = approximate_conditional_prob(self.grid[i], self)
             h_hat.append(-(approx.minimize2(j, nstep=50)[::-1])[0])
 
         return np.array(h_hat)
@@ -301,31 +294,28 @@ class approximate_conditional_density_E(rr.smooth_atom, M_estimator):
     def area_normalized_density(self, j, mean):
 
         normalizer = 0.
-
         approx_nonnormalized = []
+
         for i in range(self.grid.shape[0]):
             approx_density = np.exp(-np.true_divide((self.grid[i] - mean) ** 2, 2 * self.norm[j])
                                     + (self.h_approx[j,:])[i])
-
             normalizer += approx_density
-
             approx_nonnormalized.append(approx_density)
 
         return np.cumsum(np.array(approx_nonnormalized / normalizer))
 
     def approximate_ci(self, j):
 
-        param_grid = np.linspace(-5, 15, num=201)
-
+        grid_length = 201
+        param_grid = np.linspace(-5*np.max(np.abs(self.target_observed)), 5*np.max(np.abs(self.target_observed)), num=grid_length)
+        #param_grid = np.linspace(-5, 15, num=201)
         area = np.zeros(param_grid.shape[0])
 
         for k in range(param_grid.shape[0]):
-
             area_vec = self.area_normalized_density(j, param_grid[k])
             area[k] = area_vec[self.ind_obs[j]]
 
         region = param_grid[(area >= 0.05) & (area <= 0.95)]
-
         if region.size > 0:
             return np.nanmin(region), np.nanmax(region)
         else:

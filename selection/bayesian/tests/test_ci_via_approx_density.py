@@ -4,7 +4,7 @@ import time
 import regreg.api as rr
 import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
-from selection.bayesian.ci_via_approx_density import approximate_conditional_density_E
+from selection.bayesian.ci_via_approx_density import approximate_conditional_density
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
 from selection.tests.decorators import wait_for_return_value, register_report, set_sampling_params_iftrue
 from selection.randomized.query import naive_confidence_intervals
@@ -14,7 +14,7 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
+def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0.1,
                           lam_frac=1.,
                           loss='logistic',
                           randomizer='gaussian'):
@@ -33,7 +33,6 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
     epsilon = 1. / np.sqrt(n)
 
     W = np.ones(p) * lam
-    # W[0] = 0 # use at least some unpenalized
     penalty = rr.group_lasso(np.arange(p),
                              weights=dict(zip(np.arange(p), W)), lagrange=1.)
     if randomizer=='gaussian':
@@ -41,9 +40,10 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
     elif randomizer=='laplace':
         randomization = randomization.laplace((p,), scale=1.)
 
-    ci = approximate_conditional_density_E(loss, epsilon, penalty, randomization)
-
+    ci = approximate_conditional_density(loss, epsilon, penalty, randomization)
     ci.solve_approx()
+
+    print(n, p)
     print("nactive", ci._overall.sum())
     active_set = np.asarray([i for i in range(p) if ci._overall[i]])
 
@@ -53,14 +53,13 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
 
     print("active set, true_support", active_set, true_support)
     active = ci._overall
-    #truth = np.round((np.linalg.pinv(X[:, active])).dot(X[:, active].dot(true_beta[active])))
     true_vec = beta[active]
 
     print("true coefficients", true_vec)
 
     if (set(active_set).intersection(set(true_support)) == set(true_support))== True:
 
-        ci_active_E = np.zeros((nactive, 2))
+        ci_active = np.zeros((nactive, 2))
         covered = np.zeros(nactive, np.bool)
         ci_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
@@ -71,11 +70,11 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
         toc = time.time()
 
         for j in range(nactive):
-            ci_active_E[j, :] = np.array(ci.approximate_ci(j))
-            if (ci_active_E[j, 0] <= true_vec[j]) and (ci_active_E[j,1] >= true_vec[j]):
+            ci_active[j, :] = np.array(ci.approximate_ci(j))
+            if (ci_active[j, 0] <= true_vec[j]) and (ci_active[j,1] >= true_vec[j]):
                 covered[j] = 1
-            ci_length[j] = ci_active_E[j,1] - ci_active_E[j,0]
-            print(ci_active_E[j, :])
+            ci_length[j] = ci_active[j,1] - ci_active[j,0]
+            print(ci_active[j, :])
             pivots[j] = ci.approximate_pvalue(j, true_vec[j])
 
             # naive ci
@@ -91,7 +90,7 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0,
 
 def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 200, 'p': 20, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 200, 'p': 50, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
     split_report = reports.reports['test_approximate_ci']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
