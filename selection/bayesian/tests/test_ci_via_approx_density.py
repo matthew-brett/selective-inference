@@ -88,9 +88,9 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0.1,
     #else:
     #    return 0
 
-def report(niter=100, **kwargs):
+def report(niter=50, **kwargs):
 
-    kwargs = {'s': 0, 'n': 100, 'p': 10, 'snr': 7, 'loss': 'logistic', 'randomizer':'laplace'}
+    kwargs = {'s': 0, 'n': 100, 'p': 10, 'snr': 7, 'loss': 'gaussian', 'randomizer':'laplace'}
     split_report = reports.reports['test_approximate_ci']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
