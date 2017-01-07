@@ -1,11 +1,7 @@
-import time
 import numpy as np
 import regreg.api as rr
 from selection.bayesian.selection_probability_rr import nonnegative_softmax_scaled
 from scipy.stats import norm
-from selection.randomized.M_estimator import M_estimator
-from selection.randomized.glm import pairs_bootstrap_glm, bootstrap_cov
-import selection.tests.reports as reports
 
 def myround(a, decimals=1):
     a_x = np.round(a, decimals=1)* 10.
@@ -154,19 +150,19 @@ class approximate_conditional_prob(rr.smooth_atom):
 
         lagrange = map.lagrange
 
-        self.inactive_lagrange = lagrange[~self.AD._overall]
-        self.active_lagrange = lagrange[self.AD._overall]
+        self.inactive_lagrange = lagrange[~self.map._overall]
+        self.active_lagrange = lagrange[self.map._overall]
 
         rr.smooth_atom.__init__(self,
                                 (map.nactive,),
                                 offset=offset,
                                 quadratic=quadratic,
-                                initial=self.AD.feasible_point,
+                                initial=self.map.feasible_point,
                                 coef=coef)
 
         self.coefs[:] = map.feasible_point
 
-        self.nonnegative_barrier = nonnegative_softmax_scaled(self.AD.nactive)
+        self.nonnegative_barrier = nonnegative_softmax_scaled(self.map.nactive)
 
 
     def sel_prob_smooth_objective(self, param, mode='both', check_feasibility=False):
@@ -175,8 +171,8 @@ class approximate_conditional_prob(rr.smooth_atom):
 
         data = np.squeeze(self.t *  self.map.A)
 
-        offset_active = self.map.offset_active + data[:self.AD.nactive]
-        offset_inactive = self.map.offset_inactive + data[self.AD.nactive:]
+        offset_active = self.map.offset_active + data[:self.map.nactive]
+        offset_inactive = self.map.offset_inactive + data[self.map.nactive:]
 
         active_conj_loss = rr.affine_smooth(self.active_conjugate,
                                             rr.affine_transform(self.map.B_active, offset_active))
@@ -261,7 +257,6 @@ class approximate_conditional_prob(rr.smooth_atom):
 class approximate_conditional_density(rr.smooth_atom):
 
     def __init__(self, sel_alg,
-                       randomizer,
                        coef=1.,
                        offset=None,
                        quadratic=None,
@@ -275,11 +270,9 @@ class approximate_conditional_density(rr.smooth_atom):
                                 quadratic=quadratic,
                                 coef=coef)
 
-        self.randomizer = randomizer
-
-        self.target_observed = self.map.target_observed
+        self.target_observed = self.sel_alg.target_observed
         self.nactive = self.target_observed.shape[0]
-        self.target_cov = self.map.Sigma_T
+        self.target_cov = self.sel_alg.target_cov
 
     def solve_approx(self):
 
@@ -314,7 +307,7 @@ class approximate_conditional_density(rr.smooth_atom):
         for i in range(self.grid.shape[0]):
 
             approx = approximate_conditional_prob(self.grid[i], self.sel_alg)
-            h_hat.append(-(approx.minimize2(j, nstep=50)[::-1])[0])
+            h_hat.append(-(approx.minimize2(j, nstep=100)[::-1])[0])
 
         return np.array(h_hat)
 

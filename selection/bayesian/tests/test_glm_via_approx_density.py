@@ -5,6 +5,7 @@ import regreg.api as rr
 import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
 from selection.bayesian.ci_via_approx_density import approximate_conditional_density
+from selection.bayesian.M_estimator_approx import M_estimator_approx
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
 from selection.tests.decorators import wait_for_return_value, register_report, set_sampling_params_iftrue
 from selection.randomized.query import naive_confidence_intervals
@@ -14,10 +15,14 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0.1,
-                          lam_frac=1.,
-                          loss='logistic',
-                          randomizer='gaussian'):
+def test_approximate_ci(n=200,
+                        p=10,
+                        s=3,
+                        snr=5,
+                        rho=0.1,
+                        lam_frac = 1.,
+                        loss='logistic',
+                        randomizer='gaussian'):
 
     from selection.api import randomization
 
@@ -40,7 +45,8 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0.1,
     elif randomizer=='laplace':
         randomization = randomization.laplace((p,), scale=1.)
 
-    ci = approximate_conditional_density(loss, epsilon, penalty, randomization, randomizer)
+    M_est = M_estimator_approx(loss, penalty, epsilon, randomization)
+    ci = approximate_conditional_density(M_est, randomizer)
     ci.solve_approx()
 
     print(n, p)
@@ -64,8 +70,8 @@ def test_approximate_ci(n=200, p=10, s=3, snr=5, rho=0.1,
         ci_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
 
-        ci_naive = naive_confidence_intervals(ci.target, ci.target_observed)
-        naive_pvals = naive_pvalues(ci.target, ci.target_observed, true_vec)
+        ci_naive = naive_confidence_intervals(M_est.target, M_est.target_observed)
+        naive_pvals = naive_pvalues(M_est.target, M_est.target_observed, true_vec)
         naive_covered = np.zeros(nactive)
         toc = time.time()
 
