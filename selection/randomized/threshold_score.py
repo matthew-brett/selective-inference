@@ -112,16 +112,6 @@ class threshold_score(query):
         self._setup = True
 
         ## permuted
-        self.feasible_point = self.observed_opt_state[self.boundary]
-        self._opt_linear_term = np.concatenate((_opt_linear_term[self.boundary, :], _opt_linear_term[self.interior, :]), 0)
-        self._opt_affine_term = np.concatenate((_opt_offset[self.boundary], _opt_offset[self.interior]), 0)
-        self.opt_transform = (self._opt_linear_term, self._opt_affine_term)
-
-        self._score_linear_term = np.concatenate(
-            (_score_linear_term[self.boundary, :], _score_linear_term[self.interior, :]), 0)
-        self.score_transform = (self._score_linear_term, np.zeros(_score_linear_term.shape[0]))
-        self._overall = self.boundary
-        self.inactive_lagrange = self.threshold[0]*np.ones(np.sum(~self.boundary))
 
 
     def projection(self, opt_state):

@@ -17,10 +17,10 @@ from selection.randomized.query import naive_pvalues
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
 def test_approximate_ci(n=200,
-                        p=20,
+                        p=50,
                         s=0,
                         snr=5,
-                        threshold = 2.,
+                        threshold = 3.,
                         rho=0.1,
                         lam_frac = 1.,
                         loss='gaussian',
@@ -30,16 +30,11 @@ def test_approximate_ci(n=200,
 
     if loss == "gaussian":
         X, y, beta, nonzero, sigma = gaussian_instance(n=n, p=p, s=s, rho=rho, snr=snr, sigma=1.)
-        lam = lam_frac * np.mean(np.fabs(np.dot(X.T, np.random.standard_normal((n, 2000)))).max(0)) * sigma
         loss = rr.glm.gaussian(X, y)
     elif loss == "logistic":
         X, y, beta, _ = logistic_instance(n=n, p=p, s=s, rho=rho, snr=snr)
         loss = rr.glm.logistic(X, y)
-        lam = lam_frac * np.mean(np.fabs(np.dot(X.T, np.random.binomial(1, 1. / 2, (n, 10000)))).max(0))
 
-    #W = np.ones(p) * lam
-    #penalty = rr.group_lasso(np.arange(p),
-    #                         weights=dict(zip(np.arange(p), W)), lagrange=1.)
     if randomizer=='gaussian':
         randomization = randomization.isotropic_gaussian((p,), scale=1.)
     elif randomizer=='laplace':
@@ -107,9 +102,9 @@ def test_approximate_ci(n=200,
     #else:
     #    return 0
 
-def report(niter=50, **kwargs):
+def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 200, 'p': 30, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 300, 'p': 50, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
     split_report = reports.reports['test_approximate_ci']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
@@ -118,7 +113,7 @@ def report(niter=50, **kwargs):
                                                      **kwargs)
 
     fig = reports.pivot_plot_plus_naive(screened_results)
-    fig.savefig('approx_pivots.pdf')
+    fig.savefig('approx_pivots_threshold.pdf')
 
 
 if __name__=='__main__':

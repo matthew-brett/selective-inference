@@ -112,7 +112,7 @@ def report(niter=50, **kwargs):
                                                      **kwargs)
 
     fig = reports.pivot_plot_plus_naive(screened_results)
-    fig.savefig('approx_pivots.pdf')
+    fig.savefig('approx_pivots_glm.pdf')
 
 
 if __name__=='__main__':

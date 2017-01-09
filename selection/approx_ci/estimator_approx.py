@@ -11,7 +11,24 @@ class M_estimator_approx(M_estimator):
         self.randomizer = randomizer
 
     def solve_approx(self):
-        self.Msolve()
+        self.solve()
+        (_opt_linear_term, _opt_affine_term) = self.opt_transform
+        self._opt_linear_term = np.concatenate(
+            (_opt_linear_term[self._overall, :], _opt_linear_term[~self._overall, :]), 0)
+        self._opt_affine_term = np.concatenate((_opt_affine_term[self._overall], _opt_affine_term[~self._overall]), 0)
+        self.opt_transform = (self._opt_linear_term, self._opt_affine_term)
+
+        (_score_linear_term, _) = self.score_transform
+        self._score_linear_term = np.concatenate(
+            (_score_linear_term[self._overall, :], _score_linear_term[~self._overall, :]), 0)
+        self.score_transform = (self._score_linear_term, np.zeros(self._score_linear_term.shape[0]))
+        self.feasible_point = np.abs(self.initial_soln[self._overall])
+        lagrange = []
+        for key, value in self.penalty.weights.iteritems():
+            lagrange.append(value)
+        lagrange = np.asarray(lagrange)
+        self.inactive_lagrange = lagrange[~self._overall]
+
         X, _ = self.loss.data
         n, p = X.shape
         self.p = p
@@ -54,6 +71,20 @@ class threshold_score_approx(threshold_score):
     def solve_approx(self):
         self.solve()
         self.setup_sampler()
+        self.feasible_point = self.observed_opt_state[self.boundary]
+        (_opt_linear_term, _opt_offset) = self.opt_transform
+        self._opt_linear_term = np.concatenate((_opt_linear_term[self.boundary, :], _opt_linear_term[self.interior, :]),
+                                               0)
+        self._opt_affine_term = np.concatenate((_opt_offset[self.boundary], _opt_offset[self.interior]), 0)
+        self.opt_transform = (self._opt_linear_term, self._opt_affine_term)
+
+        (_score_linear_term, _) = self.score_transform
+        self._score_linear_term = np.concatenate(
+            (_score_linear_term[self.boundary, :], _score_linear_term[self.interior, :]), 0)
+        self.score_transform = (self._score_linear_term, np.zeros(self._score_linear_term.shape[0]))
+        self._overall = self.boundary
+        self.inactive_lagrange = self.threshold[0] * np.ones(np.sum(~self.boundary))
+
         X, _ = self.loss.data
         n, p = X.shape
         self.p = p
