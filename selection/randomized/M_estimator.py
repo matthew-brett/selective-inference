@@ -227,13 +227,18 @@ class M_estimator(query):
         # later, we will modify `score_transform`
         # in `linear_decomposition`
 
-        _opt_linear_term = np.concatenate((_opt_linear_term[self._overall,:], _opt_linear_term[~self._overall,:]), 0)
-        _opt_affine_term = np.concatenate((_opt_affine_term[self._overall], _opt_affine_term[~self._overall]),0)
-        self.opt_transform = (_opt_linear_term, _opt_affine_term)
+        self._opt_linear_term = np.concatenate((_opt_linear_term[self._overall,:], _opt_linear_term[~self._overall,:]), 0)
+        self._opt_affine_term = np.concatenate((_opt_affine_term[self._overall], _opt_affine_term[~self._overall]),0)
+        self.opt_transform = (self._opt_linear_term, _opt_affine_term)
 
-        _score_linear_term = np.concatenate((_score_linear_term[self._overall, :], _score_linear_term[~self._overall, :]), 0)
-        self.score_transform = (_score_linear_term, np.zeros(_score_linear_term.shape[0]))
-
+        self._score_linear_term = np.concatenate((_score_linear_term[self._overall, :], _score_linear_term[~self._overall, :]), 0)
+        self.score_transform = (self._score_linear_term, np.zeros(_score_linear_term.shape[0]))
+        self.feasible_point = np.abs(self.initial_soln[self._overall])
+        lagrange = []
+        for key, value in self.penalty.weights.iteritems():
+            lagrange.append(value)
+        lagrange = np.asarray(lagrange)
+        self.inactive_lagrange = lagrange[~self._overall]
         # now store everything needed for the projections
         # the projection acts only on the optimization
         # variables

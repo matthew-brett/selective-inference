@@ -6,6 +6,7 @@ import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
 from selection.approx_ci.ci_via_approx_density import approximate_conditional_density
 from selection.approx_ci.estimator_approx import M_estimator_approx
+
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
 from selection.tests.decorators import wait_for_return_value, register_report, set_sampling_params_iftrue
 from selection.randomized.query import naive_confidence_intervals
@@ -70,8 +71,14 @@ def test_approximate_ci(n=200,
         ci_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
 
-        ci_naive = naive_confidence_intervals(M_est.target, M_est.target_observed)
-        naive_pvals = naive_pvalues(M_est.target, M_est.target_observed, true_vec)
+        class target_class(object):
+            def __init__(self, target_cov):
+                self.target_cov = target_cov
+                self.shape = target_cov.shape
+        target = target_class(M_est.target_cov)
+
+        ci_naive = naive_confidence_intervals(target, M_est.target_observed)
+        naive_pvals = naive_pvalues(target, M_est.target_observed, true_vec)
         naive_covered = np.zeros(nactive)
         toc = time.time()
 

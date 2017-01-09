@@ -148,10 +148,7 @@ class approximate_conditional_prob(rr.smooth_atom):
             raise ValueError(
                 'randomization must know its CGF_conjugate -- currently only isotropic_gaussian and laplace are implemented and are assumed to be randomization with IID coordinates')
 
-        lagrange = map.lagrange
-
-        self.inactive_lagrange = lagrange[~self.map._overall]
-        self.active_lagrange = lagrange[self.map._overall]
+        self.inactive_lagrange = self.map.inactive_lagrange
 
         rr.smooth_atom.__init__(self,
                                 (map.nactive,),
@@ -307,7 +304,7 @@ class approximate_conditional_density(rr.smooth_atom):
         for i in range(self.grid.shape[0]):
 
             approx = approximate_conditional_prob(self.grid[i], self.sel_alg)
-            h_hat.append(-(approx.minimize2(j, nstep=100)[::-1])[0])
+            h_hat.append(-(approx.minimize2(j, nstep=50)[::-1])[0])
 
         return np.array(h_hat)
 

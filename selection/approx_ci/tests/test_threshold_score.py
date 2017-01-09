@@ -5,7 +5,8 @@ import regreg.api as rr
 import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
 from selection.approx_ci.ci_via_approx_density import approximate_conditional_density
-from selection.approx_ci.estimator_approx import M_estimator_approx
+from selection.approx_ci.estimator_approx import threshold_score_approx
+
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
 from selection.tests.decorators import wait_for_return_value, register_report, set_sampling_params_iftrue
 from selection.randomized.query import naive_confidence_intervals
@@ -16,9 +17,10 @@ from selection.randomized.query import naive_pvalues
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
 def test_approximate_ci(n=200,
-                        p=10,
-                        s=3,
+                        p=20,
+                        s=0,
                         snr=5,
+                        threshold = 2.,
                         rho=0.1,
                         lam_frac = 1.,
                         loss='gaussian',
@@ -35,35 +37,37 @@ def test_approximate_ci(n=200,
         loss = rr.glm.logistic(X, y)
         lam = lam_frac * np.mean(np.fabs(np.dot(X.T, np.random.binomial(1, 1. / 2, (n, 10000)))).max(0))
 
-
-    W = np.ones(p) * lam
-    penalty = rr.group_lasso(np.arange(p),
-                             weights=dict(zip(np.arange(p), W)), lagrange=1.)
+    #W = np.ones(p) * lam
+    #penalty = rr.group_lasso(np.arange(p),
+    #                         weights=dict(zip(np.arange(p), W)), lagrange=1.)
     if randomizer=='gaussian':
         randomization = randomization.isotropic_gaussian((p,), scale=1.)
     elif randomizer=='laplace':
         randomization = randomization.laplace((p,), scale=1.)
 
     active_bool = np.zeros(p, np.bool)
-    active_bool[range(3)] = 1
+    #active_bool[range(3)] = 1
     inactive_bool = ~active_bool
 
-    M_est = M_estimator_approx(loss, epsilon, penalty, randomization, randomizer)
-    M_est.solve_approx()
-    ci = approximate_conditional_density(M_est)
+    TS = threshold_score_approx(loss,
+                                threshold,
+                                randomization,
+                                active_bool,
+                                inactive_bool,
+                                randomizer)
+
+    TS.solve_approx()
+    active = TS._overall
+    print("nactive", active.sum())
+
+    ci = approximate_conditional_density(TS)
     ci.solve_approx()
 
-    active = M_est._overall
     active_set = np.asarray([i for i in range(p) if active[i]])
-
     true_support = np.asarray([i for i in range(p) if i < s])
-
     nactive = np.sum(active)
-
     print("active set, true_support", active_set, true_support)
-
     true_vec = beta[active]
-
     print("true coefficients", true_vec)
 
     if (set(active_set).intersection(set(true_support)) == set(true_support))== True:
@@ -73,8 +77,14 @@ def test_approximate_ci(n=200,
         ci_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
 
-        ci_naive = naive_confidence_intervals(M_est.target, M_est.target_observed)
-        naive_pvals = naive_pvalues(M_est.target, M_est.target_observed, true_vec)
+        class target_class(object):
+            def __init__(self, target_cov):
+                self.target_cov = target_cov
+                self.shape = target_cov.shape
+
+        target = target_class(TS.target_cov)
+        ci_naive = naive_confidence_intervals(target, TS.target_observed)
+        naive_pvals = naive_pvalues(target, TS.target_observed, true_vec)
         naive_covered = np.zeros(nactive)
         toc = time.time()
 
