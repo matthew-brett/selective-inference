@@ -65,6 +65,7 @@ class threshold_score_approx(threshold_score):
                  active_bool,
                  inactive_bool,
                  randomizer):
+
         threshold_score.__init__(self, loss, threshold, randomization, active_bool, inactive_bool)
         self.randomizer = randomizer
 
