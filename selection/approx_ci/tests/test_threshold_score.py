@@ -102,7 +102,7 @@ def test_approximate_ci(n=200,
     #else:
     #    return 0
 
-def report(niter=100, **kwargs):
+def report(niter=50, **kwargs):
 
     kwargs = {'s': 0, 'n': 300, 'p': 50, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
     split_report = reports.reports['test_approximate_ci']
