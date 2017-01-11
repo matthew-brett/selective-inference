@@ -153,7 +153,7 @@ class greedy_score_step_approx(greedy_score_step):
 
         (self._score_linear_term, _) = self.score_transform
 
-        self.inactive_lagrange = self.observed_scaling * np.ones(p-1)
+        self.inactive_lagrange = self.observed_scaling * self.penalty.weights[0] * np.ones(p-1)
 
         X, _ = self.loss.data
         n, p = X.shape
