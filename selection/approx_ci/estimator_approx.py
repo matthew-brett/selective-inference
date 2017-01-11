@@ -116,8 +116,6 @@ class threshold_score_approx(threshold_score):
 
 
 
-
-
 class greedy_score_step_approx(greedy_score_step):
 
     def __init__(self, loss,
@@ -133,6 +131,7 @@ class greedy_score_step_approx(greedy_score_step):
                                  inactive_groups,
                                  randomization)
         self.randomizer = randomizer
+
 
     def solve_approx(self):
 
