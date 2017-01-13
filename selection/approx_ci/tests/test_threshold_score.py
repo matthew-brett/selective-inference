@@ -16,7 +16,7 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_approximate_ci(n=200,
+def test_threshold_score(n=200,
                         p=50,
                         s=0,
                         snr=5,
@@ -105,7 +105,7 @@ def test_approximate_ci(n=200,
 def report(niter=200, **kwargs):
 
     kwargs = {'s': 0, 'n': 200, 'p': 20, 'snr': 7, 'loss': 'gaussian', 'randomizer': 'gaussian'}
-    split_report = reports.reports['test_approximate_ci']
+    split_report = reports.reports['test_threshold_score']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
                                                      niter,

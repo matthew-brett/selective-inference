@@ -16,14 +16,14 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_approximate_ci(n=200,
-                        p=10,
-                        s=3,
-                        snr=5,
-                        rho=0.1,
-                        lam_frac = 1.,
-                        loss='gaussian',
-                        randomizer='gaussian'):
+def test_glm(n=200,
+             p=10,
+             s=3,
+             snr=5,
+             rho=0.1,
+             lam_frac = 1.2,
+             loss='gaussian',
+             randomizer='gaussian'):
 
     from selection.api import randomization
 
@@ -103,8 +103,8 @@ def test_approximate_ci(n=200,
 
 def report(niter=50, **kwargs):
 
-    kwargs = {'s': 0, 'n': 200, 'p': 30, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
-    split_report = reports.reports['test_approximate_ci']
+    kwargs = {'s': 0, 'n': 500, 'p': 100, 'snr': 7, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    split_report = reports.reports['test_glm']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
                                                      niter,
