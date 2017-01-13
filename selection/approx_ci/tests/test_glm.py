@@ -20,7 +20,7 @@ def test_glm(n=500,
              s=5,
              snr=3,
              rho=0.,
-             lam_frac = 1.1,
+             lam_frac = 1.,
              loss='gaussian',
              randomizer='gaussian'):
 

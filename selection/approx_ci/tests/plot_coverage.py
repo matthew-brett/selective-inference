@@ -4,10 +4,10 @@ from selection.approx_ci.tests.test_glm import test_glm
 
 
 def compute_coverage():
-    n, p, s = 500, 100, 5
-    snr_grid = np.linspace(0, 10, num=5)
+    n, p, s = 500, 50, 5
+    snr_grid = np.linspace(0, 10, num=4)
     snr_grid_length = snr_grid.shape[0]
-    niter = 50
+    niter = 200
     lasso_selective_xaxis = []
     lasso_naive_xaxis = []
     logistic_selective_xaxis = []
@@ -41,6 +41,8 @@ def compute_coverage():
 
 
 if __name__=='__main__':
+    np.random.seed(500)
+
     snr_grid, lasso_selective_xaxis, lasso_naive_xaxis, logistic_selective_xaxis, logistic_naive_xaxis = compute_coverage()
 
     plt.plot(snr_grid, lasso_selective_xaxis, label = 'Lasso selective')
