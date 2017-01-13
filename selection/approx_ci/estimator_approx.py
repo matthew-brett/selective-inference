@@ -145,7 +145,7 @@ class greedy_score_step_approx(greedy_score_step):
         n, p = X.shape
         omega = self.randomization.sample()
         randomized_score = np.dot(X.T,y)+omega
-        maximizing_var = np.argmax(randomized_score)
+        maximizing_var = np.argmax(np.abs(randomized_score))
         self._overall = np.zeros(X.shape[1], dtype=bool)
         self._overall[maximizing_var] = 1
         self.sign = np.sign(randomized_score[maximizing_var])
