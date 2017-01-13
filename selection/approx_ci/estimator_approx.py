@@ -135,47 +135,63 @@ class greedy_score_step_approx(greedy_score_step):
 
     def solve_approx(self):
 
-        self.solve()
-        self.setup_sampler()
-        p = self.inactive.sum()
-        self.feasible_point = self.observed_scaling
-        self._overall = np.zeros(p, dtype=bool)
+        #self.solve()
+        #self.setup_sampler()
+        #p = self.inactive.sum()
         #print(self.selection_variable['variables'])
-        self._overall[self.selection_variable['variables']] = 1
+        #self._overall[self.selection_variable['variables']] = 1
 
-        self.observed_opt_state = np.hstack([self.observed_scaling, self.observed_subgradients])
+        X, y = self.loss.data
+        n, p = X.shape
+        omega = self.randomization.sample()
+        randomized_score = np.dot(X.T,y)+omega
+        maximizing_var = np.argmax(randomized_score)
+        self._overall = np.zeros(X.shape[1], dtype=bool)
+        self._overall[maximizing_var] = 1
+        self.sign = np.sign(randomized_score[maximizing_var])
+        self.observed_scaling = np.abs(randomized_score[maximizing_var])
+        self.observed_subgradients = randomized_score[~self._overall]
+        self._opt_linear_term = np.identity(p)
+        self._opt_linear_term[0,0] = self.sign
 
-        _opt_linear_term = np.concatenate((np.atleast_2d(self.maximizing_subgrad).T, self.losing_padding_map), 1)
-        self._opt_linear_term = np.concatenate((_opt_linear_term[self._overall,:], _opt_linear_term[~self._overall,:]), 0)
+        #self.observed_opt_state = np.hstack([self.observed_scaling, self.observed_subgradients])
+        #_opt_linear_term = np.concatenate((np.atleast_2d(self.maximizing_subgrad).T, self.losing_padding_map), 1)
+        #self._opt_linear_term = np.concatenate((_opt_linear_term[self._overall,:], _opt_linear_term[~self._overall,:]), 0)
 
         self.opt_transform = (self._opt_linear_term, np.zeros(p))
 
-        (self._score_linear_term, _) = self.score_transform
 
+        self._score_linear_term = np.zeros((p,p))
+        nactive = self._overall.sum()
+        X, y = self.loss.data
+        XE = X[:, self._overall]
+        self._score_linear_term[:nactive, :nactive] = -np.dot(XE.T, XE)
+        self._score_linear_term[nactive:, :nactive] = -np.dot(X[:,~self._overall].T, XE)
+        self._score_linear_term[nactive:, nactive:] = -np.identity(X.shape[1]-nactive)
+
+        from selection.randomized.M_estimator import restricted_Mest
+        beta_unpenalized = restricted_Mest(self.loss, self._overall, solve_args={'min_its':50, 'tol':1.e-10})
+        beta_full = np.zeros(self.loss.shape)
+        beta_full[self._overall] = beta_unpenalized
+        self.observed_score_state = np.hstack([beta_unpenalized,
+                                               -self.loss.smooth_objective(beta_full, 'grad')[~self._overall]])
         self.inactive_lagrange = self.observed_scaling * self.penalty.weights[0] * np.ones(p-1)
 
-        X, _ = self.loss.data
-        n, p = X.shape
-        self.p = p
         bootstrap_score = pairs_bootstrap_glm(self.loss,
                                               self.active,
                                               inactive=~self.active)[0]
+        n, p = X.shape
+        self.p = p
+        score_cov = bootstrap_cov(lambda: np.random.choice(n, size=(n,), replace=True), bootstrap_score)
+        self.score_target_cov = score_cov[:, :nactive]
+        self.target_cov = score_cov[:nactive, :nactive]
+        self.target_observed = self.observed_score_state[:nactive]
 
-        bootstrap_target, target_observed = pairs_bootstrap_glm(self.loss,
-                                                             self._overall,
-                                                             beta_full=None,
-                                                             inactive=None)
 
-        sampler = lambda : np.random.choice(n, size=(n,), replace=True)
-        self.target_cov, target_score_cov = bootstrap_cov(sampler, bootstrap_target, cross_terms=(bootstrap_score,))
-        self.score_target_cov = np.atleast_2d(target_score_cov).T
-        self.target_observed = target_observed
-
-        nactive = self._overall.sum()
         self.nactive = nactive
-
         self.B_active = self._opt_linear_term[:nactive, :nactive]
         self.B_inactive = self._opt_linear_term[nactive:, :nactive]
+        self.feasible_point = self.observed_scaling
 
 
     def setup_map(self, j):

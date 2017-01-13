@@ -78,7 +78,7 @@ class greedy_score_step(query):
 
         # find the randomized maximizer
 
-        randomized_score = self.observed_score_state - self._randomZ
+        randomized_score = self.observed_score_state + self._randomZ
         terms = self.group_lasso_dual.terms(randomized_score)
 
         # assuming a.s. unique maximizing group here
@@ -86,12 +86,16 @@ class greedy_score_step(query):
         maximizing_group = np.unique(self.group_lasso_dual.groups)[np.argmax(terms)]
         maximizing_subgrad = randomized_score[self.group_lasso_dual.groups == maximizing_group]
         maximizing_subgrad /= np.linalg.norm(maximizing_subgrad) # this is now a unit vector
-        maximizing_subgrad *= self.group_lasso_dual.weights[maximizing_group] # now a vector of length given by weight of maximizing group
+        #maximizing_subgrad *= self.group_lasso_dual.weights[maximizing_group] # now a vector of length given by weight of maximizing group
         self.maximizing_subgrad = np.zeros(inactive.sum())
         self.maximizing_subgrad[self.group_lasso_dual.groups == maximizing_group] = maximizing_subgrad
-        self.observed_scaling = np.max(terms) #/ self.group_lasso_dual.weights[maximizing_group]
+        self.observed_scaling = np.max(terms) * self.group_lasso_dual.weights[maximizing_group]
 
         # which groups did not win
+        self.sign = np.sign(randomized_score[maximizing_group])
+        #print(self.sign)
+        #print(maximizing_subgrad)
+
 
         losing_groups = [g for g in np.unique(self.group_lasso_dual.groups) if g != maximizing_group]
         losing_set = np.zeros_like(self.maximizing_subgrad, np.bool)

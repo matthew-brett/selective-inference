@@ -4,7 +4,7 @@ import time
 import regreg.api as rr
 import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
-from selection.approx_ci.ci_via_approx_density import approximate_conditional_density
+from selection.approx_ci.ci_approx_greedy_step import approximate_conditional_density
 from selection.approx_ci.estimator_approx import greedy_score_step_approx
 
 from selection.tests.flags import SMALL_SAMPLES, SET_SEED
@@ -109,7 +109,7 @@ def test_approximate_ci(n=200,
 
 def report(niter=200, **kwargs):
 
-    kwargs = {'s': 0, 'n': 200, 'p': 20, 'snr': 7, 'loss': 'gaussian', 'randomizer': 'gaussian'}
+    kwargs = {'s': 0, 'n': 200, 'p': 30, 'snr': 7, 'loss': 'gaussian', 'randomizer': 'gaussian'}
     split_report = reports.reports['test_approximate_ci']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
@@ -118,7 +118,7 @@ def report(niter=200, **kwargs):
                                                      **kwargs)
 
     fig = reports.pivot_plot_plus_naive(screened_results)
-    fig.savefig('approx_pivots_threshold.pdf')
+    fig.savefig('approx_pivots_FS.pdf')
 
 
 if __name__=='__main__':
