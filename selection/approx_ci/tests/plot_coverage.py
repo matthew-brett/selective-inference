@@ -4,10 +4,10 @@ from selection.approx_ci.tests.test_glm import test_glm
 
 
 def compute_coverage():
-    n, p, s = 500, 50, 5
+    n, p, s = 500, 100, 5
     snr_grid = np.linspace(0, 10, num=4)
     snr_grid_length = snr_grid.shape[0]
-    niter = 200
+    niter = 100
     lasso_selective_xaxis = []
     lasso_naive_xaxis = []
     logistic_selective_xaxis = []
@@ -18,7 +18,8 @@ def compute_coverage():
         lasso_naive = []
         logistic_selective = []
         logistic_naive = []
-        for _ in range(niter):
+        for j in range(niter):
+            print("grid point, iteration:", i,j)
             result_lasso = test_glm(n=n, p=p, s=s, snr = snr_grid[i], loss='gaussian')
             #result_logistic = test_glm(n=n, p=p, s=s, snr = snr_grid[i], loss='logistic')
             if result_lasso is not None:
@@ -50,8 +51,8 @@ if __name__=='__main__':
     #plt.plot(snr_grid, logistic_selective_xaxis, label = 'Logistic selective')
     #plt.plot(snr_grid, logistic_naive_xaxis, label = "Logistic naive")
     plt.legend(loc='lower right')
-    plt.xlabel("coverage")
-    plt.ylabel("snr")
+    plt.ylabel("coverage")
+    plt.xlabel("snr")
     print(lasso_selective_xaxis)
     print(lasso_naive_xaxis)
     #print(logistic_selective_xaxis)

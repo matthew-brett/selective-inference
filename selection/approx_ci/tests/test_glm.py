@@ -15,9 +15,9 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_glm(n=500,
+def test_glm(n=600,
              p=100,
-             s=5,
+             s=0,
              snr=3,
              rho=0.,
              lam_frac = 1.,
@@ -53,6 +53,8 @@ def test_glm(n=500,
     active_set = np.asarray([i for i in range(p) if active[i]])
     nactive = np.sum(active)
 
+    if nactive==0:
+        return None
     print("active set, true_support", active_set, true_support)
     true_vec = beta[active]
     #print("true coefficients", true_vec)
@@ -92,9 +94,9 @@ def test_glm(n=500,
     #else:
     #    return 0
 
-def report(niter=50, **kwargs):
+def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 500, 'p': 10, 'snr': 5, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 600, 'p': 100, 'snr': 5, 'loss': 'gaussian', 'randomizer':'gaussian'}
     split_report = reports.reports['test_glm']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
