@@ -12,7 +12,7 @@ from selection.randomized.query import naive_confidence_intervals
 from selection.randomized.query import naive_pvalues
 
 
-@register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
+@register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues', 'ci_length_naive'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
 def test_glm(n=600,
@@ -20,8 +20,8 @@ def test_glm(n=600,
              s=0,
              snr=3,
              rho=0.,
-             lam_frac = 1.,
-             loss='gaussian',
+             lam_frac = 1.5,
+             loss='logistic',
              randomizer='gaussian'):
 
     from selection.api import randomization
@@ -63,9 +63,9 @@ def test_glm(n=600,
         ci = approximate_conditional_density(M_est)
         ci.solve_approx()
 
-        ci_active = np.zeros((nactive, 2))
-        covered = np.zeros(nactive, np.bool)
-        ci_length = np.zeros(nactive)
+        ci_sel = np.zeros((nactive, 2))
+        sel_covered = np.zeros(nactive, np.bool)
+        sel_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
 
         class target_class(object):
@@ -77,26 +77,28 @@ def test_glm(n=600,
         ci_naive = naive_confidence_intervals(target, M_est.target_observed)
         naive_pvals = naive_pvalues(target, M_est.target_observed, true_vec)
         naive_covered = np.zeros(nactive)
+        naive_length = np.zeros(nactive)
 
         for j in range(nactive):
-            ci_active[j, :] = np.array(ci.approximate_ci(j))
-            if (ci_active[j, 0] <= true_vec[j]) and (ci_active[j,1] >= true_vec[j]):
-                covered[j] = 1
-            ci_length[j] = ci_active[j,1] - ci_active[j,0]
-            print(ci_active[j, :])
+            ci_sel[j, :] = np.array(ci.approximate_ci(j))
+            if (ci_sel[j, 0] <= true_vec[j]) and (ci_sel[j,1] >= true_vec[j]):
+                sel_covered[j] = 1
+            sel_length[j] = ci_sel[j,1] - ci_sel[j,0]
+            print(ci_sel[j, :])
             pivots[j] = ci.approximate_pvalue(j, true_vec[j])
 
             # naive ci
             if (ci_naive[j,0]<=true_vec[j]) and (ci_naive[j,1]>=true_vec[j]):
                 naive_covered[j]+=1
+            naive_length[j] = ci_naive[j,1] - ci_naive[j,0]
 
-        return covered, ci_length, pivots, naive_covered, naive_pvals
+        return sel_covered, sel_length, pivots, naive_covered, naive_pvals, naive_length
     #else:
     #    return 0
 
 def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 600, 'p': 100, 'snr': 5, 'loss': 'gaussian', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 600, 'p': 100, 'snr': 5, 'loss': 'logistic', 'randomizer':'gaussian'}
     split_report = reports.reports['test_glm']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],

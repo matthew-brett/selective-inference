@@ -1,6 +1,5 @@
 from __future__ import print_function
 import numpy as np
-import time
 import regreg.api as rr
 import selection.tests.reports as reports
 from selection.tests.instance import logistic_instance, gaussian_instance
@@ -13,7 +12,7 @@ from selection.randomized.query import naive_confidence_intervals
 from selection.randomized.query import naive_pvalues
 
 
-@register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues'])
+@register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues', 'ci_length_naive'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
 def test_greedy_step(n=200,
@@ -58,23 +57,26 @@ def test_greedy_step(n=200,
 
     GS.solve_approx()
     active = GS._overall
-    print("nactive", active.sum())
+    nactive = np.sum(active)
+    print("nactive", nactive)
+    if nactive==0:
+        return None
 
     ci = approximate_conditional_density(GS)
     ci.solve_approx()
 
     active_set = np.asarray([i for i in range(p) if active[i]])
     true_support = np.asarray([i for i in range(p) if i < s])
-    nactive = np.sum(active)
+
     print("active set, true_support", active_set, true_support)
     true_vec = beta[active]
     print("true coefficients", true_vec)
 
     if (set(active_set).intersection(set(true_support)) == set(true_support))== True:
 
-        ci_active = np.zeros((nactive, 2))
-        covered = np.zeros(nactive, np.bool)
-        ci_length = np.zeros(nactive)
+        ci_sel = np.zeros((nactive, 2))
+        sel_covered = np.zeros(nactive, np.bool)
+        sel_length = np.zeros(nactive)
         pivots = np.zeros(nactive)
 
         class target_class(object):
@@ -86,24 +88,22 @@ def test_greedy_step(n=200,
         ci_naive = naive_confidence_intervals(target, GS.target_observed)
         naive_pvals = naive_pvalues(target, GS.target_observed, true_vec)
         naive_covered = np.zeros(nactive)
-        toc = time.time()
+        naive_length = np.zeros(nactive)
 
         for j in range(nactive):
-            ci_active[j, :] = np.array(ci.approximate_ci(j))
-            if (ci_active[j, 0] <= true_vec[j]) and (ci_active[j,1] >= true_vec[j]):
-                covered[j] = 1
-            ci_length[j] = ci_active[j,1] - ci_active[j,0]
+            ci_sel[j, :] = np.array(ci.approximate_ci(j))
+            if (ci_sel[j, 0] <= true_vec[j]) and (ci_sel[j,1] >= true_vec[j]):
+                sel_covered[j] = 1
+            sel_length[j] = ci_sel[j,1] - ci_sel[j,0]
             #print(ci_active[j, :])
             pivots[j] = ci.approximate_pvalue(j, true_vec[j])
 
             # naive ci
             if (ci_naive[j,0]<=true_vec[j]) and (ci_naive[j,1]>=true_vec[j]):
                 naive_covered[j]+=1
+            naive_length[j] = ci_naive[j, 1] - ci_naive[j, 0]
 
-        tic = time.time()
-        print('ci time now', tic - toc)
-
-        return covered, ci_length, pivots, naive_covered, naive_pvals
+        return sel_covered, sel_length, pivots, naive_covered, naive_pvals, naive_length
     #else:
     #    return 0
 
