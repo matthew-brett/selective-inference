@@ -20,7 +20,7 @@ def test_greedy_step(n=200,
                      s=0,
                      snr=5,
                      rho=0.1,
-                     lam_frac = 1.,
+                     lam_frac =1.,
                      loss='gaussian',
                      randomizer='gaussian'):
 
