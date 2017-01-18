@@ -95,7 +95,7 @@ def test_greedy_step(n=200,
             if (ci_sel[j, 0] <= true_vec[j]) and (ci_sel[j,1] >= true_vec[j]):
                 sel_covered[j] = 1
             sel_length[j] = ci_sel[j,1] - ci_sel[j,0]
-            #print(ci_active[j, :])
+            print(ci_sel[j, :])
             pivots[j] = ci.approximate_pvalue(j, true_vec[j])
 
             # naive ci

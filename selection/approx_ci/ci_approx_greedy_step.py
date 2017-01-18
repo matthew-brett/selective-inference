@@ -212,10 +212,8 @@ class approximate_conditional_density(rr.smooth_atom):
     def solve_approx(self):
 
         #defining the grid on which marginal conditional densities will be evaluated
-        grid_length = 201
-        self.grid = np.linspace(-5, 15, num=grid_length)
-        #self.grid = np.linspace(-5*np.amax(np.absolute(target_observed)), 5*np.amax(np.absolute(target_observed)), num=grid_length)
-        #s_obs = np.round(self.target_observed, decimals =1)
+        grid_length = 500
+        self.grid = np.linspace(-5, 3*np.amax(np.absolute(self.target_observed)), num=grid_length)
 
         print("observed values", self.target_observed)
         self.ind_obs = np.zeros(self.nactive, int)
@@ -264,7 +262,6 @@ class approximate_conditional_density(rr.smooth_atom):
     def smooth_objective_MLE(self, param, j, mode='both', check_feasibility=False):
 
         param = self.apply_offset(param)
-
         approx_normalizer = self.area_normalized_density(j,param)
 
         f = (param**2)/(2*self.norm[j]) - (self.target_observed[j]*param)/self.norm[j] + \
@@ -322,9 +319,8 @@ class approximate_conditional_density(rr.smooth_atom):
 
     def approximate_ci(self, j):
 
-        grid_length = 201
-        #param_grid = np.linspace(-5*np.amax(np.absolute(self.target_observed)), 5*np.amax(np.absolute(self.target_observed)), num=grid_length)
-        param_grid = np.linspace(-5, 15, num=201)
+        grid_length = 500
+        param_grid = np.linspace(-5, 3*np.amax(np.absolute(self.target_observed)), num=grid_length)
         area = np.zeros(param_grid.shape[0])
 
         for k in range(param_grid.shape[0]):
