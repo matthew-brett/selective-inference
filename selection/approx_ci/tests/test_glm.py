@@ -15,12 +15,12 @@ from selection.randomized.query import naive_pvalues
 @register_report(['cover', 'ci_length', 'truth', 'naive_cover', 'naive_pvalues', 'ci_length_naive'])
 @set_sampling_params_iftrue(SMALL_SAMPLES, ndraw=10, burnin=10)
 @wait_for_return_value()
-def test_glm(n=600,
-             p=100,
+def test_glm(n=1000,
+             p=500,
              s=0,
              snr=3,
-             rho=0.1,
-             lam_frac = 1.5,
+             rho=0.,
+             lam_frac = 3.2,
              loss='logistic',
              randomizer='gaussian'):
 
@@ -98,7 +98,7 @@ def test_glm(n=600,
 
 def report(niter=100, **kwargs):
 
-    kwargs = {'s': 0, 'n': 600, 'p': 100, 'snr': 5, 'loss': 'logistic', 'randomizer':'gaussian'}
+    kwargs = {'s': 0, 'n': 600, 'p': 100, 'snr': 5, 'loss': 'logistic', 'randomizer':'laplace'}
     split_report = reports.reports['test_glm']
     screened_results = reports.collect_multiple_runs(split_report['test'],
                                                      split_report['columns'],
