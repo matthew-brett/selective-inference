@@ -33,22 +33,30 @@ class query(object):
         opt_linear, opt_offset = self.opt_transform
         data_linear, data_offset = data_transform
         data_piece = data_linear.dot(data_state) + data_offset
-        opt_piece = opt_linear.dot(opt_state) + opt_offset
 
         # value of the randomization omega
 
-        full_state = (data_piece + opt_piece)
+        if opt_linear is not None: # this can happen if we marginalize all of omega!
+            opt_piece = opt_linear.dot(opt_state) + opt_offset
+            full_state = (data_piece + opt_piece)
+        else:
+            full_state = data_piece
 
         # gradient of negative log density of randomization at omega
 
-        randomization_derivative = self.randomization.gradient(full_state)
+        if self._marginalize_subgradient==False:
+            randomization_derivative = self.randomization.gradient(full_state)
+        else:
+            randomization_derivative = self.construct_weights(full_state)
 
         # chain rule for data, optimization parts
 
         data_grad = data_linear.T.dot(randomization_derivative)
-        opt_grad = opt_linear.T.dot(randomization_derivative)
-
-        return data_grad, opt_grad - self.grad_log_jacobian(opt_state)
+        if opt_linear is not None:
+            opt_grad = opt_linear.T.dot(randomization_derivative)
+        else:
+            opt_grad = None
+        return data_grad, opt_grad #- self.grad_log_jacobian(opt_state)
 
     def linear_decomposition(self, target_score_cov, target_cov, observed_target_state):
         """

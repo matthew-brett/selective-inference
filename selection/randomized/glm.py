@@ -6,6 +6,7 @@ from regreg.api import glm
 from .M_estimator import restricted_Mest, M_estimator, M_estimator_split
 from .greedy_step import greedy_score_step
 from .threshold_score import threshold_score
+from .threshold_score_marginal import threshold_score_marginal
 
 from regreg.api import glm
 
@@ -345,10 +346,10 @@ class glm_greedy_step(greedy_score_step, glm):
                                                    self.beta_active)
         return bootstrap_score
 
-class glm_threshold_score(threshold_score):
+class glm_threshold_score(threshold_score_marginal):
 
     def setup_sampler(self):
-        threshold_score.setup_sampler(self)
+        threshold_score_marginal.setup_sampler(self)
         bootstrap_score = pairs_inactive_score_glm(self.loss,
                                                    self.active,
                                                    self.beta_active)
