@@ -3,7 +3,6 @@ dist: trusty
 python:
   - 2.7
   - 3.4
-  - 3.5
 notifications:
   email: false
 addons:
@@ -17,6 +16,7 @@ env:
         - DEPENDS="cython numpy scipy matplotlib"
 matrix:
   include:
+    - python: 3.5
     - python: 3.5
       env:
         - R_TESTS=1
